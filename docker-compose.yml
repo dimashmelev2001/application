@@ -1,0 +1,54 @@
+---
+version: '3.8'
+
+volumes:
+  data-app-storage:
+  data-mysql:
+
+networks:
+  ingress-net:
+    external: true
+    name: ingress_net
+
+services:
+  application: 
+    image: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
+    volumes:
+      - data-app-storage:/srv/app/storage
+    environment:
+      DB_HOST: '${DB_HOST:-mysql}'
+      DB_PORT: '${DB_PORT:-3306}'
+      DB_USERNAME: '${DB_USERNAME:-user}'
+      DB_PASSWORD: '${DB_PASSWORD:-password}'
+      DB_DATABASE: '${DB_DATABASE:-db}'
+      APP_ENV: '${APP_ENV:-development}'
+      APP_KEY: '${APP_KEY:-base64:/S9WaLrdipLnUs4L1O7Fcwcr990xL7NeT/VRE5vhDJ4=}'
+    networks:
+      default:
+      ingress-net:
+    deploy:
+      labels:
+        - traefik.http.routers.${CI_COMMIT_REF_SLUG}-dev-devops-project.entrypoints=web
+        - traefik.http.routers.${CI_COMMIT_REF_SLUG}-dev-devops-project.rule=Host(`${CI_COMMIT_REF_SLUG}-dev.devops-project.site`)
+        - traefik.http.services.${CI_COMMIT_REF_SLUG}-dev-devops-project.loadbalancer.server.port=80
+        - traefik.enable=true
+        - traefik.docker.network=ingress_net
+
+  mysql:
+    image: 'mysql:8'
+    volumes:
+      - 'data-mysql:/var/lib/mysql/'
+    environment:
+      DB_HOST: '${DB_HOST:-mysql}'
+      DB_PORT: '${DB_PORT:-3306}'
+      DB_USERNAME: '${DB_USERNAME:-user}'
+      DB_PASSWORD: '${DB_PASSWORD:-password}'
+      DB_DATABASE: '${DB_DATABASE:-db}'
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD:-secret_root_password}'
+    networks:
+      default:
+
+  redis:
+    image: 'redis:7.0-alpine'
+    networks:
+      default:

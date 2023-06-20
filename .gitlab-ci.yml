@@ -1,0 +1,8 @@
+---
+services:
+  - docker:dind
+
+include:
+  - project: 'devops-project/ci-cd'
+    ref: main
+    file: '.gitlab-ci.d/.gitlab-ci.yml'
